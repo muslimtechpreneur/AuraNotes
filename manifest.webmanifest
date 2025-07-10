@@ -1,11 +1,11 @@
 {
-  "name": "MyFinance Pro",
-  "short_name": "MyFinance Pro",
-  "description": "Aplikasi Keuangan Pribadi Offline Terbaik",
+  "name": "AuraNotes",
+  "short_name": "AuraNotes",
+  "description": "AuraNotes - Jurnal & Self-Care",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4361ee",
+  "theme_color": "#ecc3eb",
   "orientation": "auto",
   "icons": [
     {
