@@ -145,8 +145,19 @@
 </head>
 <body class="aura-bg aura-text">
 
+    <!-- Activation Screen -->
+    <div id="activation-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 aura-bg transition-opacity duration-500 hidden">
+        <div class="w-full max-w-sm p-8 text-center rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
+            <h2 class="text-3xl font-bold font-heading" style="color: var(--primary-light);">Aktivasi Aplikasi</h2>
+            <p class="mt-2 mb-6 aura-text-muted">Masukkan kode aktivasi untuk melanjutkan.</p>
+            <input type="text" id="activation-input" class="w-full p-3 mb-4 text-center rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none" placeholder="Kode Aktivasi">
+            <div id="activation-error" class="h-6 mb-2 text-red-500 font-semibold"></div>
+            <button id="activation-btn" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Aktivasi</button>
+        </div>
+    </div>
+
     <!-- PIN Lock Screen -->
-    <div id="pin-lock-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 aura-bg transition-opacity duration-500">
+    <div id="pin-lock-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 aura-bg transition-opacity duration-500 hidden">
         <div class="w-full max-w-sm p-8 text-center rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
             <h2 id="pin-title" class="text-3xl font-bold font-heading" style="color: var(--primary-light);">Atur PIN Keamanan</h2>
             <p id="pin-subtitle" class="mt-2 mb-6 aura-text-muted">Buat 4 digit PIN untuk menjaga privasimu.</p>
@@ -197,7 +208,7 @@
                 <input type="hidden" id="note-id-input">
                 <input type="text" id="note-title-input" placeholder="Judul catatan..." required class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
                 <textarea id="note-content-input" placeholder="Tuliskan ceritamu di sini..." required class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none min-h-[150px]"></textarea>
-                <div class="flex items-center gap-4 mb-6">
+                <div class="color-options flex items-center gap-4 mb-6">
                     <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#FFFFFF" style="background-color: #FFFFFF;"></span>
                     <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#FBCFE8" style="background-color: #FBCFE8;"></span>
                     <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#A78BFA" style="background-color: #A78BFA;"></span>
@@ -257,12 +268,13 @@
             </div>
         </div>
     </div>
-
-<script src="app.js"></script>
+    
+ <script src="app.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- ELEMENT SELECTORS ---
+    const activationScreen = document.getElementById('activation-screen');
     const pinLockScreen = document.getElementById('pin-lock-screen');
     const appContainer = document.getElementById('app-container');
     const pinInputs = document.querySelectorAll('.pin-input');
@@ -348,11 +360,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteItem = (store, key) => dbAction(store, 'readwrite', 'delete', key);
     const clearStore = (store) => dbAction(store, 'readwrite', 'clear');
 
-    // --- INITIALIZATION ---
+    // --- INITIALIZATION & AUTH ---
     async function init() {
         try {
+            setupAntiCopy();
+            await setupPWA();
             db = await setupDatabase();
-            await checkPin();
+            await checkActivation();
             await applyTheme();
             setupNav();
             setupEventListeners();
@@ -363,15 +377,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- PIN & UI LOCK ---
+    async function checkActivation() {
+        if (localStorage.getItem('auranotes_activated') === 'true') {
+            await checkPin();
+        } else {
+            activationScreen.style.display = 'flex';
+        }
+    }
+
+    function handleActivation() {
+        const validCodes = ["1701228", "myfinance-premium", "bejajadigital-2025"];
+        const input = document.getElementById('activation-input');
+        const errorEl = document.getElementById('activation-error');
+        if (validCodes.includes(input.value.trim().toLowerCase())) {
+            localStorage.setItem('auranotes_activated', 'true');
+            activationScreen.style.display = 'none';
+            checkPin();
+        } else {
+            errorEl.textContent = 'Kode aktivasi tidak valid.';
+        }
+    }
+
     async function checkPin() {
         const savedPin = await getItem('settings', 'userPIN');
+        pinLockScreen.style.display = 'flex';
         if (savedPin) {
             pinTitle.textContent = 'Masukkan PIN';
             pinSubtitle.textContent = 'Untuk membuka AuraNotes.';
             pinSubmitBtn.textContent = 'Buka';
             pinSubmitBtn.onclick = () => verifyPin(savedPin.value);
         } else {
+            pinTitle.textContent = 'Atur PIN Keamanan';
+            pinSubtitle.textContent = 'Buat 4 digit PIN untuk menjaga privasimu.';
+            pinSubmitBtn.textContent = 'Simpan PIN';
             pinSubmitBtn.onclick = setPin;
         }
     }
@@ -423,6 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPage === 'gratitude') {
             renderGratitudeTree();
         }
+        // Re-style nav buttons for new theme
+        switchPage(currentPage, true);
     }
 
     function setupNav() {
@@ -448,11 +488,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         navContainer.querySelectorAll('.nav-btn').forEach(b => {
-            const icon = b.querySelector('.icon-container');
             const isActive = b.dataset.page === pageId;
             b.classList.toggle('scale-110', isActive);
             
-            // FIX: Correctly handle theme-dependent styling
             const isDark = document.documentElement.dataset.theme === 'dark';
             if (isActive) {
                 b.style.color = isDark ? 'var(--primary-dark)' : 'var(--primary-light)';
@@ -551,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const note = {
             title: document.getElementById('note-title-input').value,
             content: document.getElementById('note-content-input').value,
-            color: selectedNoteColor,
+            color: selectedNoteColor, // This global variable is set by selectColor()
             timestamp: new Date().toISOString()
         };
         const id = document.getElementById('note-id-input').value;
@@ -577,8 +615,12 @@ document.addEventListener('DOMContentLoaded', () => {
         notes.forEach(note => {
             const card = document.createElement('div');
             card.className = 'group relative p-5 rounded-2xl shadow-md transition-transform hover:scale-[1.02] cursor-pointer animate-fade-in';
+            // FIX: Ensure the correct color from the note object is applied
             card.style.backgroundColor = note.color;
-            card.style.color = (note.color === '#FFFFFF' || note.color === '#F7F4FF') ? 'inherit' : '#1E1B26';
+            // FIX: Set text color based on background lightness for better readability
+            const isLightColor = note.color !== '#FFFFFF' && note.color !== '#F7F4FF';
+            card.style.color = isLightColor ? '#1E1B26' : 'inherit';
+            
             card.innerHTML = `
                 <button class="delete-btn absolute top-3 right-3 w-7 h-7 bg-black bg-opacity-20 rounded-full text-white text-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                 <h3 class="font-bold text-xl mb-2 font-heading">${note.title}</h3>
@@ -718,9 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawBranch(rect.width / 2, 350, startLength, 0, startWidth, 0);
     }
     
-    // --- ALL OTHER FEATURES (Habits, Gallery, Self-Care, Settings) ---
-    // These functions will create the HTML for their respective pages and handle all logic.
-
+    // --- FEATURE: HABITS ---
     async function renderHabits() {
         const page = document.getElementById('page-habits');
         page.innerHTML = `
@@ -788,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     }
 
+    // --- FEATURE: GALLERY ---
     async function renderGallery() {
         const page = document.getElementById('page-gallery');
         page.innerHTML = `
@@ -853,6 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- FEATURE: SELF-CARE ---
     async function renderSelfCare() {
         const page = document.getElementById('page-self-care');
         page.innerHTML = `
@@ -920,6 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     }
 
+    // --- FEATURE: SETTINGS ---
     async function renderSettings() {
         const page = document.getElementById('page-settings');
         page.innerHTML = `
@@ -1004,6 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await db.close();
             const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
             deleteRequest.onsuccess = () => {
+                localStorage.removeItem('auranotes_activated');
                 alert("Semua data telah dihapus. Aplikasi akan dimulai ulang.");
                 window.location.reload();
             };
@@ -1058,8 +1102,52 @@ document.addEventListener('DOMContentLoaded', () => {
         event.target.value = '';
     }
 
+    // --- PWA & ANTI-COPY ---
+    async function setupPWA() {
+        const manifestJSON = {
+            "name": "AuraNotes",
+            "short_name": "AuraNotes",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#F7F4FF",
+            "theme_color": "#A78BFA",
+            "description": "Jurnal & Self-Care App",
+            "icons": [
+                { "src": "https://placehold.co/192x192/A78BFA/FFFFFF?text=A", "type": "image/png", "sizes": "192x192" },
+                { "src": "https://placehold.co/512x512/A78BFA/FFFFFF?text=A", "type": "image/png", "sizes": "512x512" }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestJSON)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const linkEl = document.createElement('link');
+        linkEl.rel = 'manifest';
+        linkEl.href = manifestURL;
+        document.head.appendChild(linkEl);
+    }
+
+    function setupAntiCopy() {
+        const redirectUrl = "https://bejajadigital.id";
+        document.addEventListener("contextmenu", e => e.preventDefault());
+        document.addEventListener("dragstart", e => e.preventDefault());
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && ["I", "J", "C", "K"].includes(e.key.toUpperCase())) || (e.ctrlKey && ["U", "S"].includes(e.key.toUpperCase()))) {
+                e.preventDefault();
+                try { window.location.href = redirectUrl; } catch(er) {}
+            }
+        });
+        const element = new Image();
+        Object.defineProperty(element, "id", {
+            get: function () {
+                try { window.location.replace(redirectUrl); } catch(er) {}
+            }
+        });
+        setInterval(() => { console.log(element); console.clear(); }, 1000);
+    }
+
     // --- EVENT LISTENERS ---
     function setupEventListeners() {
+        document.getElementById('activation-btn').addEventListener('click', handleActivation);
+        
         pinInputs.forEach((input, index) => {
             input.addEventListener('keyup', (e) => {
                 if (e.key >= 0 && e.key <= 9 && input.value.length > 0 && index < pinInputs.length - 1) {
@@ -1093,55 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // URL redirect target
-        const redirectUrl = "https://bejajadigital.id";
-
-        // 1. Disable klik kanan dan drag image
-        document.addEventListener("contextmenu", e => e.preventDefault());
-        document.addEventListener("dragstart", e => e.preventDefault());
-        document.addEventListener("mousedown", e => {
-          if (e.button === 2 || e.button === 1) e.preventDefault();
-        });
-
-        // 2. Disable shortcut keyboard untuk Inspect & Save Source
-        document.addEventListener("keydown", function(e) {
-          if (
-            e.key === "F12" ||
-            (e.ctrlKey && e.shiftKey && ["I", "J", "C", "K"].includes(e.key.toUpperCase())) ||
-            (e.ctrlKey && ["U", "S"].includes(e.key.toUpperCase()))
-          ) {
-            e.preventDefault();
-            window.location.href = redirectUrl;
-          }
-        });
-
-        // 3. Deteksi DevTools via console.log trick
-        (function detectConsoleOpen() {
-          const element = new Image();
-          Object.defineProperty(element, "id", {
-            get: function () {
-              window.location.replace(redirectUrl);
-            }
-          });
-          setInterval(() => {
-            console.log(element);
-          }, 1000);
-        })();
-
-        // 4. (Opsional) Cegah download gambar via klik kanan Save As
-        document.addEventListener("DOMContentLoaded", () => {
-          document.querySelectorAll("img").forEach(img => {
-            img.setAttribute("draggable", "false");
-            img.oncontextmenu = e => e.preventDefault();
-          });
-        });
-
-// Daftarkan service worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(reg => console.log('SW berhasil:', reg))
-    .catch(err => console.error('SW gagal:', err));
-}
+  
 
     // --- START THE APP ---
     init();
