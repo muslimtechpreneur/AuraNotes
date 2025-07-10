@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraNotes - Jurnal & Self-Care</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* --- KONFIGURASI FONT DAN WARNA DASAR (VARIABLES) --- */
+        :root {
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Poppins', sans-serif;
+
+            /* Palet Warna Light Mode - Ethereal Dawn */
+            --primary-light: #A78BFA; /* Lavender */
+            --secondary-light: #FBCFE8; /* Soft Pink */
+            --accent-light: #FDE68A; /* Pale Yellow */
+            --bg-light: #F7F4FF; /* Off-white Lavender */
+            --surface-light: #FFFFFF;
+            --text-light: #1E1B26;
+            --text-muted-light: #6B7280;
+            --border-light: #E5E7EB;
+            --glass-light: rgba(255, 255, 255, 0.5);
+            --leaf-color-light: #86EFAC;
+            --trunk-color-light: #A16207;
+            --danger-light: #FCA5A5;
+            --danger-strong-light: #991B1B;
+
+            /* Palet Warna Dark Mode - Cosmic Dusk */
+            --primary-dark: #C4B5FD; /* Brighter Lavender */
+            --secondary-dark: #F9A8D4; /* Brighter Pink */
+            --accent-dark: #FBBF24; /* Amber */
+            --bg-dark: #1E1B26; /* Deep Indigo */
+            --surface-dark: #2D2A3A;
+            --text-dark: #F7F4FF;
+            --text-muted-dark: #9CA3AF;
+            --border-dark: #4B5563;
+            --glass-dark: rgba(20, 18, 28, 0.5);
+            --leaf-color-dark: #A7F3D0;
+            --trunk-color-dark: #FDE047;
+            --danger-dark: #EF4444;
+            --danger-strong-dark: #FECACA;
+        }
+
+        /* --- APLIKASI THEME --- */
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            transition: background-color 0.5s, color 0.5s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html[data-theme='dark'] body {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        /* --- ANIMASI GLOBAL --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes headShake {
+            0% { transform: translateX(0); }
+            6.5% { transform: translateX(-6px) rotateY(-9deg); }
+            18.5% { transform: translateX(5px) rotateY(7deg); }
+            31.5% { transform: translateX(-3px) rotateY(-5deg); }
+            43.5% { transform: translateX(2px) rotateY(3deg); }
+            50% { transform: translateX(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .animate-head-shake { animation: headShake 0.82s cubic-bezier(.36,.07,.19,.97) both; }
+
+
+        /* --- STYLING KOMPONEN TAILWIND DENGAN CSS VARIABLES --- */
+        .aura-bg { background-color: var(--bg-light); }
+        .aura-surface { background-color: var(--surface-light); }
+        .aura-text { color: var(--text-light); }
+        .aura-text-muted { color: var(--text-muted-light); }
+        .aura-border { border-color: var(--border-light); }
+        .aura-glass { background-color: var(--glass-light); }
+        
+        html[data-theme='dark'] .aura-bg { background-color: var(--bg-dark); }
+        html[data-theme='dark'] .aura-surface { background-color: var(--surface-dark); }
+        html[data-theme='dark'] .aura-text { color: var(--text-dark); }
+        html[data-theme='dark'] .aura-text-muted { color: var(--text-muted-dark); }
+        html[data-theme='dark'] .aura-border { border-color: var(--border-dark); }
+        html[data-theme='dark'] .aura-glass { background-color: var(--glass-dark); }
+        
+        .btn-gradient {
+            background-image: linear-gradient(to right, var(--primary-light), var(--secondary-light));
+            color: #1E1B26;
+        }
+        html[data-theme='dark'] .btn-gradient {
+            background-image: linear-gradient(to right, var(--primary-dark), var(--secondary-dark));
+            color: #1E1B26;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-light);
+            color: var(--danger-strong-light);
+        }
+        html[data-theme='dark'] .btn-danger {
+            background-color: var(--danger-dark);
+            color: var(--danger-strong-dark);
+        }
+
+        .form-checkbox { color: var(--primary-light); }
+        html[data-theme='dark'] .form-checkbox { color: var(--primary-dark); }
+        .form-checkbox-secondary { color: var(--secondary-light); }
+        html[data-theme='dark'] .form-checkbox-secondary { color: var(--secondary-dark); }
+
+        main::-webkit-scrollbar { width: 6px; }
+        main::-webkit-scrollbar-track { background: transparent; }
+        main::-webkit-scrollbar-thumb {
+            background-color: var(--primary-light);
+            border-radius: 20px;
+        }
+        html[data-theme='dark'] main::-webkit-scrollbar-thumb {
+            background-color: var(--primary-dark);
+        }
+        
+        .font-heading { font-family: var(--font-heading); }
+        
+        #gratitude-tree {
+            width: 100%;
+            height: 350px;
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .group:hover .group-hover\:opacity-100 { opacity: 1; }
+    </style>
+</head>
+<body class="aura-bg aura-text">
+
+    <!-- PIN Lock Screen -->
+    <div id="pin-lock-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 aura-bg transition-opacity duration-500">
+        <div class="w-full max-w-sm p-8 text-center rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
+            <h2 id="pin-title" class="text-3xl font-bold font-heading" style="color: var(--primary-light);">Atur PIN Keamanan</h2>
+            <p id="pin-subtitle" class="mt-2 mb-6 aura-text-muted">Buat 4 digit PIN untuk menjaga privasimu.</p>
+            <div class="flex justify-center gap-3 mb-4">
+                <input type="password" maxlength="1" class="pin-input w-14 h-16 text-3xl text-center border-2 rounded-xl aura-border bg-transparent focus:border-purple-400 focus:ring-2 focus:ring-pink-300 outline-none transition duration-300" pattern="[0-9]*" inputmode="numeric">
+                <input type="password" maxlength="1" class="pin-input w-14 h-16 text-3xl text-center border-2 rounded-xl aura-border bg-transparent focus:border-purple-400 focus:ring-2 focus:ring-pink-300 outline-none transition duration-300" pattern="[0-9]*" inputmode="numeric">
+                <input type="password" maxlength="1" class="pin-input w-14 h-16 text-3xl text-center border-2 rounded-xl aura-border bg-transparent focus:border-purple-400 focus:ring-2 focus:ring-pink-300 outline-none transition duration-300" pattern="[0-9]*" inputmode="numeric">
+                <input type="password" maxlength="1" class="pin-input w-14 h-16 text-3xl text-center border-2 rounded-xl aura-border bg-transparent focus:border-purple-400 focus:ring-2 focus:ring-pink-300 outline-none transition duration-300" pattern="[0-9]*" inputmode="numeric">
+            </div>
+            <div id="pin-error" class="h-6 mb-2 text-red-500 font-semibold"></div>
+            <button id="pin-submit-btn" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Simpan PIN</button>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="h-screen max-h-screen w-full max-w-2xl mx-auto flex flex-col aura-surface md:rounded-3xl md:my-4 md:h-[95vh] md:max-h-[95vh] md:shadow-2xl opacity-0 transition-opacity duration-500 overflow-hidden">
+        <header class="flex-shrink-0 flex items-center justify-between p-4 border-b aura-border">
+            <h1 class="text-3xl font-bold font-heading" style="background: linear-gradient(to right, var(--primary-light), var(--secondary-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AuraNotes</h1>
+            <button id="dark-mode-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+            </button>
+        </header>
+
+        <main class="flex-grow p-4 sm:p-6 overflow-y-auto aura-bg">
+            <section id="page-journal" class="hidden animate-fade-in"></section>
+            <section id="page-gratitude" class="hidden animate-fade-in"></section>
+            <section id="page-habits" class="hidden animate-fade-in"></section>
+            <section id="page-gallery" class="hidden animate-fade-in"></section>
+            <section id="page-self-care" class="hidden animate-fade-in"></section>
+            <section id="page-settings" class="hidden animate-fade-in"></section>
+        </main>
+
+        <nav class="flex-shrink-0 flex justify-around p-2 border-t aura-border aura-surface">
+        </nav>
+        
+        <button id="add-btn-float" class="hidden absolute bottom-24 right-6 w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-4xl font-light btn-gradient hover:scale-110 transform transition-transform duration-300">+</button>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-backdrop" class="fixed inset-0 z-30 bg-black bg-opacity-30 backdrop-blur-sm hidden transition-opacity duration-300"></div>
+    
+    <div id="note-modal" class="modal fixed inset-0 z-40 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-6 rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="note-modal-title" class="text-2xl font-bold font-heading">Catatan Baru</h3>
+                <button class="close-modal text-3xl aura-text-muted hover:scale-110 transition-transform">&times;</button>
+            </div>
+            <form id="note-form">
+                <input type="hidden" id="note-id-input">
+                <input type="text" id="note-title-input" placeholder="Judul catatan..." required class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
+                <textarea id="note-content-input" placeholder="Tuliskan ceritamu di sini..." required class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none min-h-[150px]"></textarea>
+                <div class="flex items-center gap-4 mb-6">
+                    <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#FFFFFF" style="background-color: #FFFFFF;"></span>
+                    <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#FBCFE8" style="background-color: #FBCFE8;"></span>
+                    <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#A78BFA" style="background-color: #A78BFA;"></span>
+                    <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#FDE68A" style="background-color: #FDE68A;"></span>
+                    <span class="color-dot w-8 h-8 rounded-full cursor-pointer border-2" data-color="#A7F3D0" style="background-color: #A7F3D0;"></span>
+                </div>
+                <button type="submit" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Simpan Catatan</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="photo-caption-modal" class="modal fixed inset-0 z-40 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm p-6 rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold font-heading">Tambah Caption</h3>
+                <button class="close-modal text-3xl aura-text-muted hover:scale-110 transition-transform">&times;</button>
+            </div>
+            <form id="photo-caption-form">
+                <img id="caption-preview-img" src="" alt="Preview" class="w-full rounded-xl mb-4 max-h-60 object-cover">
+                <input type="text" id="photo-caption-input" placeholder="Tulis caption singkat..." class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
+                <button type="submit" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Simpan Foto</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="change-pin-modal" class="modal fixed inset-0 z-40 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm p-6 rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold font-heading">Ubah PIN</h3>
+                <button class="close-modal text-3xl aura-text-muted hover:scale-110 transition-transform">&times;</button>
+            </div>
+            <form id="change-pin-form" class="space-y-4">
+                <div>
+                    <label for="old-pin-input" class="text-sm font-medium aura-text-muted">PIN Lama</label>
+                    <input type="password" id="old-pin-input" required maxlength="4" class="w-full p-3 mt-1 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
+                </div>
+                <div>
+                    <label for="new-pin-input" class="text-sm font-medium aura-text-muted">PIN Baru</label>
+                    <input type="password" id="new-pin-input" required maxlength="4" class="w-full p-3 mt-1 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
+                </div>
+                <div>
+                    <label for="confirm-new-pin-input" class="text-sm font-medium aura-text-muted">Konfirmasi PIN Baru</label>
+                    <input type="password" id="confirm-new-pin-input" required maxlength="4" class="w-full p-3 mt-1 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
+                </div>
+                <div id="change-pin-error" class="h-6 text-red-500 font-semibold"></div>
+                <button type="submit" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Simpan PIN Baru</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal fixed inset-0 z-40 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm p-8 text-center rounded-3xl shadow-2xl aura-glass backdrop-blur-xl border aura-border animate-pop-in">
+            <h3 id="confirm-modal-title" class="text-lg mb-6"></h3>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-modal-no" class="w-full py-2 font-semibold rounded-full aura-surface border aura-border hover:bg-gray-100 dark:hover:bg-gray-700 transition">Batal</button>
+                <button id="confirm-modal-yes" class="w-full py-2 font-semibold rounded-full transition">Ya</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENT SELECTORS ---
+    const pinLockScreen = document.getElementById('pin-lock-screen');
+    const appContainer = document.getElementById('app-container');
+    const pinInputs = document.querySelectorAll('.pin-input');
+    const pinSubmitBtn = document.getElementById('pin-submit-btn');
+    const pinTitle = document.getElementById('pin-title');
+    const pinSubtitle = document.getElementById('pin-subtitle');
+    const pinError = document.getElementById('pin-error');
+    
+    const mainContent = document.querySelector('main');
+    const navContainer = document.querySelector('nav');
+    const addBtnFloat = document.getElementById('add-btn-float');
+    
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+
+    // Modals
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const allModals = document.querySelectorAll('.modal');
+    const noteModal = document.getElementById('note-modal');
+    const photoCaptionModal = document.getElementById('photo-caption-modal');
+    const changePinModal = document.getElementById('change-pin-modal');
+    const confirmModal = document.getElementById('confirm-modal');
+    
+    let db;
+    let currentPage = 'journal';
+    let confirmCallback = null;
+    let tempImageDataUrl = null;
+    let selectedNoteColor = '#FFFFFF';
+
+    const ICONS = {
+        journal: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+        gratitude: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V9"/></svg>`,
+        habits: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h4M9 12l2 2 4-4"/></svg>`,
+        gallery: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+        'self-care': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/><path d="M12 12a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>`,
+        settings: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+        sun: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.93 19.07 1.41-1.41"/><path d="m17.66 6.34 1.41-1.41"/></svg>`,
+        moon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+    };
+
+    // --- DATABASE LOGIC ---
+    const DB_NAME = 'AuraNotesDB_vFinal';
+    const DB_VERSION = 1;
+
+    function setupDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onerror = (event) => reject('Database error: ' + event.target.errorCode);
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                const stores = ['notes', 'gratitude', 'habits', 'photos', 'todos', 'settings'];
+                stores.forEach(storeName => {
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        let options = storeName === 'gratitude' ? { keyPath: 'date' } :
+                                      storeName === 'settings' ? { keyPath: 'key' } :
+                                      { keyPath: 'id', autoIncrement: true };
+                        db.createObjectStore(storeName, options);
+                    }
+                });
+            };
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                resolve(db);
+            };
+        });
+    }
+    
+    const dbAction = (storeName, mode, action, data) => new Promise((resolve, reject) => {
+        try {
+            const transaction = db.transaction(storeName, mode);
+            const store = transaction.objectStore(storeName);
+            const request = store[action](data);
+            transaction.oncomplete = () => resolve(request.result);
+            transaction.onerror = () => reject(transaction.error);
+        } catch (error) {
+            reject(error);
+        }
+    });
+
+    const addItem = (store, item) => dbAction(store, 'readwrite', 'add', item);
+    const putItem = (store, item) => dbAction(store, 'readwrite', 'put', item);
+    const getItem = (store, key) => dbAction(store, 'readonly', 'get', key);
+    const getAllItems = (store) => dbAction(store, 'readonly', 'getAll');
+    const deleteItem = (store, key) => dbAction(store, 'readwrite', 'delete', key);
+    const clearStore = (store) => dbAction(store, 'readwrite', 'clear');
+
+    // --- INITIALIZATION ---
+    async function init() {
+        try {
+            db = await setupDatabase();
+            await checkPin();
+            await applyTheme();
+            setupNav();
+            setupEventListeners();
+            await switchPage(currentPage, true);
+        } catch (error) {
+            console.error("Initialization failed:", error);
+            document.body.innerHTML = `<div class="text-center p-8">Gagal memuat aplikasi. Coba nonaktifkan mode private atau segarkan halaman. Error: ${error}</div>`;
+        }
+    }
+    
+    // --- PIN & UI LOCK ---
+    async function checkPin() {
+        const savedPin = await getItem('settings', 'userPIN');
+        if (savedPin) {
+            pinTitle.textContent = 'Masukkan PIN';
+            pinSubtitle.textContent = 'Untuk membuka AuraNotes.';
+            pinSubmitBtn.textContent = 'Buka';
+            pinSubmitBtn.onclick = () => verifyPin(savedPin.value);
+        } else {
+            pinSubmitBtn.onclick = setPin;
+        }
+    }
+
+    const getPinFromInputs = () => Array.from(pinInputs).map(input => input.value).join('');
+    
+    async function setPin() {
+        const pin = getPinFromInputs();
+        if (pin.length === 4 && /^\d{4}$/.test(pin)) {
+            await putItem('settings', { key: 'userPIN', value: pin });
+            unlockApp();
+        } else {
+            pinError.textContent = 'PIN harus 4 angka.';
+        }
+    }
+
+    function verifyPin(savedPin) {
+        const pin = getPinFromInputs();
+        if (pin === savedPin) {
+            unlockApp();
+        } else {
+            pinError.textContent = 'PIN salah. Coba lagi.';
+            pinLockScreen.querySelector('.animate-pop-in').classList.add('animate-head-shake');
+            setTimeout(() => pinLockScreen.querySelector('.animate-pop-in').classList.remove('animate-head-shake'), 820);
+            pinInputs.forEach(input => input.value = '');
+            pinInputs[0].focus();
+        }
+    }
+
+    function unlockApp() {
+        pinLockScreen.classList.add('opacity-0', 'pointer-events-none');
+        appContainer.classList.remove('opacity-0');
+    }
+
+    // --- THEME & NAVIGATION ---
+    async function applyTheme() {
+        const themeSetting = await getItem('settings', 'theme');
+        const theme = themeSetting ? themeSetting.value : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        darkModeToggle.innerHTML = theme === 'dark' ? ICONS.sun : ICONS.moon;
+    }
+
+    async function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        darkModeToggle.innerHTML = newTheme === 'dark' ? ICONS.sun : ICONS.moon;
+        await putItem('settings', { key: 'theme', value: newTheme });
+        if (currentPage === 'gratitude') {
+            renderGratitudeTree();
+        }
+    }
+
+    function setupNav() {
+        const pages = ['journal', 'gratitude', 'habits', 'gallery', 'self-care', 'settings'];
+        navContainer.innerHTML = pages.map(page => `
+            <button class="nav-btn flex-1 flex flex-col items-center gap-1 p-2 transition-all duration-300 transform aura-text-muted" data-page="${page}">
+                <div class="icon-container">${ICONS[page]}</div>
+                <span class="text-xs font-medium">${page.charAt(0).toUpperCase() + page.slice(1).replace('-',' ')}</span>
+            </button>
+        `).join('');
+        navContainer.querySelectorAll('.nav-btn').forEach(button => button.addEventListener('click', () => switchPage(button.dataset.page)));
+    }
+
+    async function switchPage(pageId, isInitial = false) {
+        currentPage = pageId;
+        document.querySelectorAll('main section').forEach(p => p.classList.add('hidden'));
+        const activePage = document.getElementById(`page-${pageId}`);
+        activePage.classList.remove('hidden');
+        if (!isInitial) {
+            activePage.classList.remove('animate-fade-in');
+            void activePage.offsetWidth;
+            activePage.classList.add('animate-fade-in');
+        }
+
+        navContainer.querySelectorAll('.nav-btn').forEach(b => {
+            const icon = b.querySelector('.icon-container');
+            const isActive = b.dataset.page === pageId;
+            b.classList.toggle('scale-110', isActive);
+            
+            // FIX: Correctly handle theme-dependent styling
+            const isDark = document.documentElement.dataset.theme === 'dark';
+            if (isActive) {
+                b.style.color = isDark ? 'var(--primary-dark)' : 'var(--primary-light)';
+            } else {
+                b.style.color = isDark ? 'var(--text-muted-dark)' : 'var(--text-muted-light)';
+            }
+        });
+
+        const pagesWithAddButton = ['journal', 'habits', 'self-care', 'gallery'];
+        addBtnFloat.classList.toggle('hidden', !pagesWithAddButton.includes(pageId));
+        
+        if (pagesWithAddButton.includes(pageId)) {
+            addBtnFloat.onclick = () => {
+                if (pageId === 'journal') openNoteModal();
+                if (pageId === 'habits') document.getElementById('new-habit-input')?.focus();
+                if (pageId === 'self-care') document.getElementById('new-todo-input')?.focus();
+                if (pageId === 'gallery') document.getElementById('photo-upload-input')?.click();
+            };
+        }
+
+        await renderPageContent(pageId);
+    }
+    
+    async function renderPageContent(pageId) {
+        switch(pageId) {
+            case 'journal': await renderNotes(); break;
+            case 'gratitude': await renderGratitude(); break;
+            case 'habits': await renderHabits(); break;
+            case 'gallery': await renderGallery(); break;
+            case 'self-care': await renderSelfCare(); break;
+            case 'settings': await renderSettings(); break;
+        }
+    }
+
+    // --- MODAL MANAGEMENT ---
+    function openModal(modal) {
+        modalBackdrop.classList.remove('hidden');
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal(modal) {
+        modalBackdrop.classList.add('hidden');
+        modal.classList.add('hidden');
+    }
+
+    function showConfirmationModal(message, onConfirm, isDestructive = false) {
+        const confirmModalTitle = document.getElementById('confirm-modal-title');
+        const confirmModalYes = document.getElementById('confirm-modal-yes');
+        confirmModalTitle.textContent = message;
+        confirmCallback = onConfirm;
+        confirmModalYes.className = 'w-full py-2 font-semibold rounded-full transition transform hover:scale-105';
+        if(isDestructive) {
+            confirmModalYes.classList.add('btn-danger');
+        } else {
+            confirmModalYes.classList.add('btn-gradient');
+        }
+        openModal(confirmModal);
+    }
+
+    // --- FEATURE: JOURNAL ---
+    function openNoteModal(note = null) {
+        const noteForm = document.getElementById('note-form');
+        const noteModalTitle = document.getElementById('note-modal-title');
+        const noteIdInput = document.getElementById('note-id-input');
+        const noteTitleInput = document.getElementById('note-title-input');
+        const noteContentInput = document.getElementById('note-content-input');
+        
+        noteForm.reset();
+        if (note) {
+            noteModalTitle.textContent = 'Edit Catatan';
+            noteIdInput.value = note.id;
+            noteTitleInput.value = note.title;
+            noteContentInput.value = note.content;
+            selectColor(note.color);
+        } else {
+            noteModalTitle.textContent = 'Catatan Baru';
+            noteIdInput.value = '';
+            selectColor('#FFFFFF');
+        }
+        openModal(noteModal);
+    }
+
+    function selectColor(color) {
+        selectedNoteColor = color;
+        const colorOptions = document.querySelectorAll('.color-options .color-dot');
+        colorOptions.forEach(dot => {
+            const isActive = dot.dataset.color === color;
+            dot.classList.toggle('ring-2', isActive);
+            dot.classList.toggle('ring-purple-500', isActive);
+            dot.classList.toggle('scale-125', isActive);
+        });
+    }
+    
+    async function saveNote(e) {
+        e.preventDefault();
+        const note = {
+            title: document.getElementById('note-title-input').value,
+            content: document.getElementById('note-content-input').value,
+            color: selectedNoteColor,
+            timestamp: new Date().toISOString()
+        };
+        const id = document.getElementById('note-id-input').value;
+        if (id) {
+            note.id = parseInt(id);
+            await putItem('notes', note);
+        } else {
+            await addItem('notes', note);
+        }
+        closeModal(noteModal);
+        await renderNotes();
+    }
+
+    async function renderNotes() {
+        const page = document.getElementById('page-journal');
+        const notes = (await getAllItems('notes')).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        if (notes.length === 0) {
+            page.innerHTML = `<div class="text-center p-8 aura-surface rounded-2xl aura-text-muted">Belum ada catatan. Yuk, mulai menulis!</div>`;
+            return;
+        }
+        page.innerHTML = `<div id="journal-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>`;
+        const grid = document.getElementById('journal-grid');
+        notes.forEach(note => {
+            const card = document.createElement('div');
+            card.className = 'group relative p-5 rounded-2xl shadow-md transition-transform hover:scale-[1.02] cursor-pointer animate-fade-in';
+            card.style.backgroundColor = note.color;
+            card.style.color = (note.color === '#FFFFFF' || note.color === '#F7F4FF') ? 'inherit' : '#1E1B26';
+            card.innerHTML = `
+                <button class="delete-btn absolute top-3 right-3 w-7 h-7 bg-black bg-opacity-20 rounded-full text-white text-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                <h3 class="font-bold text-xl mb-2 font-heading">${note.title}</h3>
+                <p class="text-sm opacity-80 mb-3 whitespace-pre-wrap">${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}</p>
+                <small class="text-xs opacity-60">${new Date(note.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</small>
+            `;
+            card.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('delete-btn')) openNoteModal(note);
+            });
+            card.querySelector('.delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                showConfirmationModal('Yakin ingin menghapus catatan ini?', async () => {
+                    await deleteItem('notes', note.id);
+                    await renderNotes();
+                }, true);
+            });
+            grid.appendChild(card);
+        });
+    }
+    
+    // --- FEATURE: GRATITUDE ---
+    async function renderGratitude() {
+        const page = document.getElementById('page-gratitude');
+        page.innerHTML = `
+            <div class="aura-surface p-6 rounded-2xl shadow-md mb-6 animate-fade-in">
+                <form id="gratitude-form">
+                    <h3 class="text-xl font-bold font-heading mb-4">Apa yang kamu syukuri hari ini?</h3>
+                    <div class="space-y-3 mb-4">
+                        <input type="text" class="gratitude-input w-full p-3 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none" placeholder="Satu..." required>
+                        <input type="text" class="gratitude-input w-full p-3 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none" placeholder="Dua..." required>
+                        <input type="text" class="gratitude-input w-full p-3 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none" placeholder="Tiga..." required>
+                    </div>
+                    <button type="submit" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Tumbuhkan Daun Syukur</button>
+                </form>
+            </div>
+            <div class="aura-surface p-6 rounded-2xl shadow-md animate-fade-in" style="animation-delay: 100ms;">
+                <h3 class="text-xl font-bold font-heading text-center mb-2">Pohon Syukur Kamu</h3>
+                <p class="text-center text-sm aura-text-muted mb-4">Setiap catatan syukur menumbuhkan pohonmu.</p>
+                <canvas id="gratitude-tree"></canvas>
+            </div>
+        `;
+        document.getElementById('gratitude-form').addEventListener('submit', saveGratitude);
+        await updateGratitudeUI();
+    }
+
+    async function saveGratitude(e) {
+        e.preventDefault();
+        const gratitudeInputs = document.querySelectorAll('.gratitude-input');
+        const entries = Array.from(gratitudeInputs).map(input => input.value.trim()).filter(Boolean);
+        if (entries.length < 3) {
+            alert("Harap isi ketiga poin rasa syukur.");
+            return;
+        }
+        const today = new Date().toISOString().split('T')[0];
+        await putItem('gratitude', { date: today, entries });
+        await updateGratitudeUI();
+    }
+
+    async function updateGratitudeUI() {
+        const today = new Date().toISOString().split('T')[0];
+        const todayGratitude = await getItem('gratitude', today);
+        const gratitudeForm = document.getElementById('gratitude-form');
+        const gratitudeInputs = document.querySelectorAll('.gratitude-input');
+        
+        if (todayGratitude) {
+            gratitudeInputs.forEach((input, index) => {
+                input.value = todayGratitude.entries[index] || '';
+                input.disabled = true;
+            });
+            const button = gratitudeForm.querySelector('button');
+            button.textContent = 'Syukur Hari Ini Tersimpan';
+            button.disabled = true;
+            button.className = 'w-full py-3 text-lg font-semibold rounded-full shadow-lg bg-green-200 dark:bg-green-800 cursor-not-allowed';
+        }
+        await renderGratitudeTree();
+    }
+
+    async function renderGratitudeTree() {
+        const canvas = document.getElementById('gratitude-tree');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const container = canvas.parentElement;
+        
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = 350 * dpr;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `350px`;
+        ctx.scale(dpr, dpr);
+
+        const gratitudeData = await getAllItems('gratitude');
+        const gratitudeCount = gratitudeData.length;
+
+        const isDark = document.documentElement.dataset.theme === 'dark';
+        const trunkColor = getComputedStyle(document.documentElement).getPropertyValue(isDark ? '--trunk-color-dark' : '--trunk-color-light').trim();
+        const leafColor = getComputedStyle(document.documentElement).getPropertyValue(isDark ? '--leaf-color-dark' : '--leaf-color-light').trim();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const maxDepth = Math.min(9, 4 + Math.floor(gratitudeCount / 3));
+        const startLength = (350 / 4.5);
+        const startWidth = Math.min(15, 4 + gratitudeCount / 2);
+
+        function drawBranch(x, y, len, angle, branchWidth, depth) {
+            if (depth > maxDepth || branchWidth < 0.5) return;
+            
+            ctx.beginPath();
+            ctx.save();
+            ctx.strokeStyle = trunkColor;
+            ctx.lineWidth = branchWidth;
+            ctx.lineCap = 'round';
+            ctx.translate(x, y);
+            ctx.rotate(angle * Math.PI / 180);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -len);
+            ctx.stroke();
+
+            const newLen = len * (0.7 + Math.random() * 0.2);
+            
+            if (len < 15 && depth > 2) {
+                ctx.beginPath();
+                ctx.fillStyle = leafColor;
+                ctx.arc(0, -len, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            drawBranch(0, -len, newLen, (Math.random() * 10 + 20), branchWidth * 0.7, depth + 1);
+            drawBranch(0, -len, newLen, -(Math.random() * 10 + 20), branchWidth * 0.7, depth + 1);
+            if (Math.random() > 0.6) {
+                 drawBranch(0, -len, newLen, (Math.random() * 5), branchWidth * 0.7, depth + 1);
+            }
+
+            ctx.restore();
+        }
+
+        drawBranch(rect.width / 2, 350, startLength, 0, startWidth, 0);
+    }
+    
+    // --- ALL OTHER FEATURES (Habits, Gallery, Self-Care, Settings) ---
+    // These functions will create the HTML for their respective pages and handle all logic.
+
+    async function renderHabits() {
+        const page = document.getElementById('page-habits');
+        page.innerHTML = `
+            <div class="aura-surface p-6 rounded-2xl shadow-md mb-6">
+                <form id="add-habit-form">
+                    <input type="text" id="new-habit-input" placeholder="Tambah kebiasaan baru..." required class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-purple-400 outline-none">
+                    <button type="submit" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Tambah Habit</button>
+                </form>
+            </div>
+            <div id="habit-list" class="space-y-3"></div>
+        `;
+        
+        const habits = await getAllItems('habits');
+        const habitList = document.getElementById('habit-list');
+        if (habits.length === 0) {
+            habitList.innerHTML = `<div class="text-center p-8 aura-surface rounded-2xl aura-text-muted">Belum ada kebiasaan. Tambahkan satu untuk memulai!</div>`;
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            habits.forEach(habit => {
+                const isCompletedToday = habit.completedDates.includes(today);
+                const item = document.createElement('div');
+                item.className = 'aura-surface p-4 rounded-2xl shadow-md flex items-center justify-between gap-4 animate-fade-in';
+                item.innerHTML = `
+                    <label class="flex items-center gap-4 flex-grow cursor-pointer">
+                        <input type="checkbox" data-id="${habit.id}" class="form-checkbox h-6 w-6 rounded-md border-gray-300 text-purple-500 focus:ring-purple-400" ${isCompletedToday ? 'checked' : ''}>
+                        <span class="flex-grow ${isCompletedToday ? 'line-through opacity-60' : ''}">${habit.name}</span>
+                    </label>
+                    <button class="delete-habit-btn text-gray-400 hover:text-red-500 transition" data-id="${habit.id}">&times;</button>
+                `;
+                habitList.appendChild(item);
+            });
+        }
+
+        document.getElementById('add-habit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-habit-input');
+            const habitName = input.value.trim();
+            if (habitName) {
+                await addItem('habits', { name: habitName, completedDates: [] });
+                input.value = '';
+                await renderHabits();
+            }
+        });
+
+        habitList.querySelectorAll('input[type="checkbox"]').forEach(box => box.addEventListener('change', async (e) => {
+            const habit = await getItem('habits', parseInt(e.target.dataset.id));
+            const today = new Date().toISOString().split('T')[0];
+            const completedDates = new Set(habit.completedDates);
+            if (e.target.checked) {
+                completedDates.add(today);
+            } else {
+                completedDates.delete(today);
+            }
+            habit.completedDates = Array.from(completedDates);
+            await putItem('habits', habit);
+            await renderHabits();
+        }));
+        
+        habitList.querySelectorAll('.delete-habit-btn').forEach(btn => btn.addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            showConfirmationModal(`Yakin ingin menghapus habit ini?`, async () => {
+                await deleteItem('habits', id);
+                await renderHabits();
+            }, true);
+        }));
+    }
+
+    async function renderGallery() {
+        const page = document.getElementById('page-gallery');
+        page.innerHTML = `
+            <input type="file" id="photo-upload-input" accept="image/*" class="hidden">
+            <div id="photo-gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+        `;
+        const grid = document.getElementById('photo-gallery-grid');
+        const photos = (await getAllItems('photos')).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        if (photos.length === 0) {
+            grid.className = 'col-span-full';
+            grid.innerHTML = `<div class="text-center p-8 aura-surface rounded-2xl aura-text-muted">Galeri fotomu masih kosong.</div>`;
+        } else {
+            photos.forEach(photo => {
+                const item = document.createElement('div');
+                item.className = 'group relative aspect-square rounded-2xl overflow-hidden shadow-lg animate-fade-in';
+                item.innerHTML = `
+                    <img src="${photo.imageData}" alt="${photo.caption}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p class="text-white text-sm">${photo.caption}</p>
+                    </div>
+                    <button class="delete-photo-btn absolute top-2 right-2 w-7 h-7 bg-white/80 rounded-full text-black text-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                `;
+                grid.appendChild(item);
+                item.querySelector('.delete-photo-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showConfirmationModal('Yakin ingin menghapus foto ini?', async () => {
+                        await deleteItem('photos', photo.id);
+                        await renderGallery();
+                    }, true);
+                });
+            });
+        }
+        document.getElementById('photo-upload-input').addEventListener('change', handlePhotoUpload);
+    }
+
+    function handlePhotoUpload(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                tempImageDataUrl = event.target.result;
+                document.getElementById('caption-preview-img').src = tempImageDataUrl;
+                document.getElementById('photo-caption-input').value = '';
+                openModal(photoCaptionModal);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function savePhoto(e) {
+        e.preventDefault();
+        const caption = document.getElementById('photo-caption-input').value.trim();
+        if (tempImageDataUrl) {
+            await addItem('photos', {
+                imageData: tempImageDataUrl,
+                caption: caption,
+                timestamp: new Date().toISOString()
+            });
+            tempImageDataUrl = null;
+            closeModal(photoCaptionModal);
+            await renderGallery();
+        }
+    }
+
+    async function renderSelfCare() {
+        const page = document.getElementById('page-self-care');
+        page.innerHTML = `
+            <div class="aura-surface p-6 rounded-2xl shadow-md mb-6">
+                <form id="add-todo-form">
+                    <input type="text" id="new-todo-input" placeholder="Kegiatan self-care baru..." required class="w-full p-3 mb-4 rounded-xl aura-bg border aura-border focus:ring-2 focus:ring-pink-400 outline-none">
+                    <button type="submit" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Tambah Kegiatan</button>
+                </form>
+            </div>
+            <div id="todo-list" class="space-y-3"></div>
+        `;
+
+        const todos = await getAllItems('todos');
+        const todoList = document.getElementById('todo-list');
+        if (todos.length === 0) {
+            todoList.innerHTML = `<div class="text-center p-8 aura-surface rounded-2xl aura-text-muted">Waktunya merawat diri! Tambahkan kegiatan self-care.</div>`;
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            todos.forEach(todo => {
+                const isCompletedToday = todo.completedDates.includes(today);
+                const item = document.createElement('div');
+                item.className = 'aura-surface p-4 rounded-2xl shadow-md flex items-center justify-between gap-4 animate-fade-in';
+                item.innerHTML = `
+                    <label class="flex items-center gap-4 flex-grow cursor-pointer">
+                        <input type="checkbox" data-id="${todo.id}" class="form-checkbox-secondary h-6 w-6 rounded-md border-gray-300 text-pink-500 focus:ring-pink-400" ${isCompletedToday ? 'checked' : ''}>
+                        <span class="flex-grow ${isCompletedToday ? 'line-through opacity-60' : ''}">${todo.text}</span>
+                    </label>
+                    <button class="delete-todo-btn text-gray-400 hover:text-red-500 transition" data-id="${todo.id}">&times;</button>
+                `;
+                todoList.appendChild(item);
+            });
+        }
+
+        document.getElementById('add-todo-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-todo-input');
+            const todoText = input.value.trim();
+            if (todoText) {
+                await addItem('todos', { text: todoText, completedDates: [] });
+                input.value = '';
+                await renderSelfCare();
+            }
+        });
+
+        todoList.querySelectorAll('input[type="checkbox"]').forEach(box => box.addEventListener('change', async (e) => {
+            const todo = await getItem('todos', parseInt(e.target.dataset.id));
+            const today = new Date().toISOString().split('T')[0];
+            const completedDates = new Set(todo.completedDates);
+            if (e.target.checked) {
+                completedDates.add(today);
+            } else {
+                completedDates.delete(today);
+            }
+            todo.completedDates = Array.from(completedDates);
+            await putItem('todos', todo);
+            await renderSelfCare();
+        }));
+        
+        todoList.querySelectorAll('.delete-todo-btn').forEach(btn => btn.addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            showConfirmationModal(`Yakin ingin menghapus kegiatan ini?`, async () => {
+                await deleteItem('todos', id);
+                await renderSelfCare();
+            }, true);
+        }));
+    }
+
+    async function renderSettings() {
+        const page = document.getElementById('page-settings');
+        page.innerHTML = `
+            <div class="space-y-6">
+                <div class="aura-surface p-6 rounded-2xl shadow-md">
+                    <h3 class="text-xl font-bold font-heading mb-4">Keamanan</h3>
+                    <button id="change-pin-btn" class="w-full py-3 text-lg font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Ubah PIN</button>
+                </div>
+                <div class="aura-surface p-6 rounded-2xl shadow-md">
+                    <h3 class="text-xl font-bold font-heading mb-4">Penyimpanan</h3>
+                    <div class="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div id="storage-bar-fill" class="h-full rounded-full bg-gradient-to-r from-purple-400 to-pink-400 transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                    <p id="storage-usage-text" class="text-center text-sm aura-text-muted mt-2">Memuat...</p>
+                </div>
+                <div class="aura-surface p-6 rounded-2xl shadow-md">
+                    <h3 class="text-xl font-bold font-heading mb-4">Manajemen Data</h3>
+                    <div class="flex gap-4">
+                        <button id="export-data-btn" class="flex-1 py-3 font-semibold rounded-full shadow-lg btn-gradient hover:scale-105 transform transition-transform duration-300">Ekspor</button>
+                        <input type="file" id="import-data-input" accept=".xlsx" class="hidden">
+                        <button id="import-data-btn" class="flex-1 py-3 font-semibold rounded-full shadow-lg aura-surface border aura-border hover:bg-gray-100 dark:hover:bg-gray-700 transition">Impor</button>
+                    </div>
+                </div>
+                <div class="aura-surface p-6 rounded-2xl shadow-md">
+                    <h3 class="text-xl font-bold font-heading mb-4">Tentang AuraNotes</h3>
+                    <p class="text-sm aura-text-muted">AuraNotes (v2.0) adalah ruang digital pribadimu. Semua datamu 100% aman di perangkatmu.</p>
+                </div>
+                <div class="aura-surface p-6 rounded-2xl shadow-md">
+                    <h3 class="text-xl font-bold font-heading mb-4">Reset Aplikasi</h3>
+                    <button id="reset-app-btn" class="w-full py-3 font-semibold rounded-full shadow-lg btn-danger hover:scale-105 transform transition-transform duration-300">Reset Semua Data</button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('change-pin-btn').addEventListener('click', () => openModal(changePinModal));
+        document.getElementById('reset-app-btn').addEventListener('click', handleResetApp);
+        document.getElementById('export-data-btn').addEventListener('click', exportDataToXLSX);
+        document.getElementById('import-data-btn').addEventListener('click', () => document.getElementById('import-data-input').click());
+        document.getElementById('import-data-input').addEventListener('change', handleImportData);
+        
+        await renderStorageUsage();
+    }
+
+    async function renderStorageUsage() {
+        if (navigator.storage && navigator.storage.estimate) {
+            const estimate = await navigator.storage.estimate();
+            const usage = estimate.usage;
+            const quota = estimate.quota;
+            const percent = quota > 0 ? (usage / quota) * 100 : 0;
+            document.getElementById('storage-bar-fill').style.width = `${percent}%`;
+            document.getElementById('storage-usage-text').textContent = `${(usage / 1024 / 1024).toFixed(2)} MB dari ${(quota / 1024 / 1024).toFixed(2)} MB terpakai`;
+        } else {
+            document.getElementById('storage-usage-text').textContent = "Browser tidak mendukung estimasi penyimpanan.";
+        }
+    }
+
+    async function handleChangePin(e) {
+        e.preventDefault();
+        const oldPinInput = document.getElementById('old-pin-input');
+        const newPinInput = document.getElementById('new-pin-input');
+        const confirmNewPinInput = document.getElementById('confirm-new-pin-input');
+        const changePinError = document.getElementById('change-pin-error');
+        
+        changePinError.textContent = '';
+        const savedPinData = await getItem('settings', 'userPIN');
+        if (!savedPinData || savedPinData.value !== oldPinInput.value) {
+            return changePinError.textContent = "PIN lama salah.";
+        }
+        if (newPinInput.value.length !== 4 || !/^\d{4}$/.test(newPinInput.value)) {
+            return changePinError.textContent = "PIN baru harus 4 angka.";
+        }
+        if (newPinInput.value !== confirmNewPinInput.value) {
+            return changePinError.textContent = "Konfirmasi PIN baru tidak cocok.";
+        }
+        await putItem('settings', { key: 'userPIN', value: newPinInput.value });
+        alert("PIN berhasil diubah!");
+        closeModal(changePinModal);
+    }
+
+    function handleResetApp() {
+        showConfirmationModal("Anda YAKIN ingin menghapus SEMUA data? Tindakan ini tidak bisa dibatalkan.", async () => {
+            await db.close();
+            const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+            deleteRequest.onsuccess = () => {
+                alert("Semua data telah dihapus. Aplikasi akan dimulai ulang.");
+                window.location.reload();
+            };
+            deleteRequest.onerror = () => {
+                alert("Gagal menghapus data. Coba bersihkan cache browser secara manual.");
+            };
+        }, true);
+    }
+
+    async function exportDataToXLSX() {
+        const wb = XLSX.utils.book_new();
+        const storeNames = ['notes', 'gratitude', 'habits', 'todos', 'settings'];
+        for (const storeName of storeNames) {
+            let data = await getAllItems(storeName);
+            if (data.length > 0) {
+                const ws = XLSX.utils.json_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, storeName);
+            }
+        }
+        XLSX.writeFile(wb, `AuraNotes_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+        alert('Data berhasil diekspor!');
+    }
+
+    function handleImportData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        showConfirmationModal("Yakin ingin mengimpor data? SEMUA DATA SAAT INI AKAN DIGANTI.", () => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    for (const sheetName of workbook.SheetNames) {
+                        const storeName = sheetName.toLowerCase();
+                        if (db.objectStoreNames.contains(storeName)) {
+                            await clearStore(storeName);
+                            const worksheet = workbook.Sheets[sheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                            for (const item of jsonData) {
+                                await putItem(storeName, item);
+                            }
+                        }
+                    }
+                    alert("Data berhasil diimpor! Aplikasi akan dimuat ulang.");
+                    window.location.reload();
+                } catch (error) {
+                    alert("Gagal mengimpor data. Pastikan file backup valid.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }, true);
+        event.target.value = '';
+    }
+
+    // --- EVENT LISTENERS ---
+    function setupEventListeners() {
+        pinInputs.forEach((input, index) => {
+            input.addEventListener('keyup', (e) => {
+                if (e.key >= 0 && e.key <= 9 && input.value.length > 0 && index < pinInputs.length - 1) {
+                    pinInputs[index + 1].focus();
+                } else if (e.key === 'Backspace' && index > 0) {
+                    pinInputs[index - 1].focus();
+                }
+            });
+        });
+        
+        darkModeToggle.addEventListener('click', toggleTheme);
+        
+        allModals.forEach(modal => {
+            modal.querySelector('.close-modal')?.addEventListener('click', () => closeModal(modal));
+        });
+        modalBackdrop.addEventListener('click', () => allModals.forEach(closeModal));
+        
+        document.getElementById('confirm-modal-no').addEventListener('click', () => closeModal(confirmModal));
+        document.getElementById('confirm-modal-yes').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            closeModal(confirmModal);
+        });
+        
+        document.getElementById('note-form').addEventListener('submit', saveNote);
+        document.querySelectorAll('.color-options .color-dot').forEach(dot => dot.addEventListener('click', () => selectColor(dot.dataset.color)));
+        document.getElementById('photo-caption-form').addEventListener('submit', savePhoto);
+        document.getElementById('change-pin-form').addEventListener('submit', handleChangePin);
+
+        window.addEventListener('resize', () => {
+            if (currentPage === 'gratitude') renderGratitudeTree();
+        });
+    }
+
+    // URL redirect target
+        const redirectUrl = "https://bejajadigital.id";
+
+        // 1. Disable klik kanan dan drag image
+        document.addEventListener("contextmenu", e => e.preventDefault());
+        document.addEventListener("dragstart", e => e.preventDefault());
+        document.addEventListener("mousedown", e => {
+          if (e.button === 2 || e.button === 1) e.preventDefault();
+        });
+
+        // 2. Disable shortcut keyboard untuk Inspect & Save Source
+        document.addEventListener("keydown", function(e) {
+          if (
+            e.key === "F12" ||
+            (e.ctrlKey && e.shiftKey && ["I", "J", "C", "K"].includes(e.key.toUpperCase())) ||
+            (e.ctrlKey && ["U", "S"].includes(e.key.toUpperCase()))
+          ) {
+            e.preventDefault();
+            window.location.href = redirectUrl;
+          }
+        });
+
+        // 3. Deteksi DevTools via console.log trick
+        (function detectConsoleOpen() {
+          const element = new Image();
+          Object.defineProperty(element, "id", {
+            get: function () {
+              window.location.replace(redirectUrl);
+            }
+          });
+          setInterval(() => {
+            console.log(element);
+          }, 1000);
+        })();
+
+        // 4. (Opsional) Cegah download gambar via klik kanan Save As
+        document.addEventListener("DOMContentLoaded", () => {
+          document.querySelectorAll("img").forEach(img => {
+            img.setAttribute("draggable", "false");
+            img.oncontextmenu = e => e.preventDefault();
+          });
+        });
+
+// Daftarkan service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => console.log('SW berhasil:', reg))
+    .catch(err => console.error('SW gagal:', err));
+}
+
+    // --- START THE APP ---
+    init();
+});
+</script>
+</body>
+</html>
